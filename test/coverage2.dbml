@@ -1,0 +1,92 @@
+Project CoverageTest {
+  database_type: "PostgreSQL"
+  Note: 'Extended coverage test with various features'
+}
+
+Enum user_role {
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+Enum order_status {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELED
+}
+
+Table users [note: 'System users'] {
+  id integer [pk, increment]
+  username varchar(50) [not null, unique]
+  email varchar(100) [not null, unique]
+  role user_role [default: 'MEMBER']
+  age integer
+  is_active boolean [not null, default: true]
+  created_at timestamp [default: `now()`]
+}
+
+Table profiles {
+  id integer [pk, increment]
+  user_id integer [not null]
+  bio text [note: 'User bio']
+  metadata jsonb
+  tags varchar[] [default: `'{\"dev\",\"admin\"}'`]
+}
+
+Table roles_map {
+  user_id integer [not null]
+  role_id user_role [not null]
+  assigned_at timestamp [default: `now()`]
+  indexes {
+    (user_id, role_id) [pk]
+  }
+}
+
+Table orders {
+  order_id integer [not null]
+  user_id integer [not null]
+  status order_status [not null, default: 'PENDING']
+  total numeric(10,2) [default: 0]
+  created_at date [default: `CURRENT_DATE`]
+  indexes {
+    (order_id, user_id) [pk]
+    status [name: 'idx_order_status']
+  }
+}
+
+Table order_items {
+  order_id integer [not null]
+  product_id integer [not null]
+  quantity integer [default: 1]
+  price numeric(10,2) [not null]
+  indexes {
+    (order_id, product_id) [pk]
+  }
+}
+
+Table products {
+  id integer [pk, increment]
+  name varchar(100) [not null]
+  tags varchar[] [note: 'Product tags']
+  attributes jsonb [note: '''
+    {
+      "color": "string",
+      "size": "string"
+    }
+  ''']
+}
+
+Table composite_test {
+  a_id integer
+  b_id integer
+  c_field text
+  indexes {
+    (a_id, b_id) [unique, name: 'uniq_ab']
+  }
+}
+
+Ref: profiles.user_id > users.id [delete: cascade, update: set null]
+Ref: roles_map.user_id > users.id [delete: cascade]
+Ref: orders.user_id > users.id
+Ref: order_items.order_id > orders.order_id
