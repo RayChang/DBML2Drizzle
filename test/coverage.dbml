@@ -1,0 +1,64 @@
+Project TestProject {
+  database_type: "PostgreSQL"
+  note: "Comprehensive coverage test"
+}
+
+Enum user_role {
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+Table users [note: 'User table'] {
+  id integer [pk, increment]
+  role_id integer
+  username varchar(50) [not null, unique, note: 'Unique username']
+  email varchar(100) [not null, unique]
+  role user_role [default: 'MEMBER']
+  age integer [not null, check: 'age >= 18']
+  tags varchar[] [note: 'Array of tags']
+  is_active boolean [not null, default: true]
+  balance numeric [default: 0]
+  created_at timestamp [default: `now()`, not null]
+}
+
+Table profiles {
+  id integer [pk, increment]
+  user_id integer [not null]
+  bio text
+  metadata jsonb
+  roles user_role[] [default: '[]']
+}
+
+Ref: profiles.user_id > users.id [delete: cascade, update: set null]
+
+Table roles_map {
+  user_id integer [not null]
+  role_id integer [not null]
+  assigned_at timestamp [default: `now()`]
+  indexes {
+    (user_id, role_id) [pk]
+  }
+}
+
+Ref: roles_map.(user_id, role_id) > users.(id, role_id)
+
+Table orders {
+  order_id integer [not null]
+  product_id integer [not null]
+  quantity integer [default: 1]
+  created_at date [default: `CURRENT_DATE`]
+  indexes {
+    (order_id, product_id) [pk]
+    (product_id) [unique, name: 'uniq_product']
+  }
+}
+
+Table composite_test {
+  a_id integer
+  b_id integer
+  c_field text
+  indexes {
+    (a_id, b_id) [unique, name: 'uniq_ab']
+  }
+}
